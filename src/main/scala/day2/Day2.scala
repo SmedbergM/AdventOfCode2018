@@ -1,6 +1,6 @@
 package day2
 
-import scala.collection.concurrent.TrieMap
+import scala.collection.JavaConverters._
 
 import scalaj.http.Http
 
@@ -47,84 +47,50 @@ object Day2 {
   }
 
   def task2(challenge: Seq[String]): Option[String] = {
-    val seen = new Root
-
-    def task2Iter(challengeIter: Seq[String]): Option[String] = {
-      challengeIter.headOption match {
-        case None => None
-        case Some(s) =>
-          seen.insertChildAndCheckNeighbor(s.toList) match {
-            case None => task2Iter(challengeIter.drop(1))
-            case Some(neighbor) => Some(neighbor.mkString)
-          }
-      }
+    def task2Iter(challengeIter: Seq[String], searchTree: SearchTree): Option[String] = challengeIter.headOption match {
+      case None => None
+      case Some(s) =>
+        searchTree.insertPathAndCheckNeighbor(s.codePoints().iterator().asScala.toList.map(_.intValue())) match {
+          case (_, Some(path)) =>
+            Option(new String(path.toArray, 0, path.size))
+          case (nextSearchTree, _) => task2Iter(challengeIter.drop(1), nextSearchTree)
+        }
     }
 
-    task2Iter(challenge)
+    task2Iter(challenge, SearchTree.empty)
   }
 
-  sealed trait SearchTree {
-    protected val children: TrieMap[Char, Child] = TrieMap.empty
-
-    def hasPath(p: List[Char]): Boolean = p match {
-      case Nil => children.isEmpty
-      case p0 :: rest => children.get(p0) match {
-        case None => false
-        case Some(child) => child.hasPath(rest)
-      }
+  case class SearchTree(isTerminal: Boolean, children: Map[Int, SearchTree]) {
+    def hasPath(p: List[Int]): Boolean = p match {
+      case Nil => isTerminal
+      case p0 :: rest => children.get(p0).fold(false)(_.hasPath(rest))
     }
 
-    def insertChild(p: List[Char]): Unit = p match {
-      case Nil => ()
+    def insertPath(p: List[Int]): SearchTree = p match {
+      case Nil =>
+        this.copy(isTerminal = true)
       case p0 :: rest =>
-        val child = children.getOrElseUpdate(p0, new Child(p0))
-        child.insertChild(rest)
+        val nextChildren = children + (p0 -> children.getOrElse(p0, SearchTree.empty).insertPath(rest))
+        this.copy(children = nextChildren)
     }
 
-    def insertChildren(ps: Iterable[List[Char]]): Unit = {
-      ps.foreach(insertChild)
-    }
-
-    def insertChildAndCheckNeighbor(p: List[Char]): Option[List[Char]] = p match {
-      case Nil => None
+    def insertPathAndCheckNeighbor(p: List[Int]): (SearchTree, Option[List[Int]]) = p match {
+      case Nil => insertPath(p) -> None
       case p0 :: rest =>
         val optNeighbor = children.collectFirst {
-          case (c, other) if c != p0 && other.hasPath(rest) => c :: rest
+          case (c, child) if c != p0 && child.hasPath(rest) => rest
         }
         optNeighbor match {
           case Some(neighbor) =>
-            insertChild(p)
-            Some(neighbor)
+            insertPath(p) -> Some(neighbor)
           case None =>
-            children.getOrElseUpdate(p0, new Child(p0)).insertChildAndCheckNeighbor(rest).map { cs =>
-              p0 :: cs
-            }
+            val (nextChild, optNeighbor) = children.getOrElse(p0, SearchTree.empty).insertPathAndCheckNeighbor(rest)
+            this.copy(children = children + (p0 -> nextChild)) -> optNeighbor.map(p0 :: _)
         }
     }
   }
 
-  class Root extends SearchTree {
-
-    override def insertChildAndCheckNeighbor(p: List[Char]): Option[List[Char]] = p match {
-      case Nil => None
-      case p0 :: rest =>
-
-        for {
-          neighbor <- children.getOrElseUpdate(p0, new Child(p0)).insertChildAndCheckNeighbor(rest)
-            if neighbor.size == p.size
-          filteredNeighbor = neighbor.zip(p).filter(t => t._1 == t._2)
-            if filteredNeighbor.size == p.size - 1
-        } yield filteredNeighbor.map(_._1)
-        super.insertChildAndCheckNeighbor(p).flatMap {
-          case neighbor if neighbor.size != p.size => None
-          case neighbor =>
-            val filteredNeighbor = neighbor.zip(p).collect {
-              case (nc, pc) if nc == pc => nc
-            }
-            Option(filteredNeighbor).filter(_.size == p.size - 1)
-        }
-    }
+  object SearchTree {
+    def empty: SearchTree = SearchTree(false, Map.empty)
   }
-
-  class Child(value: Char) extends SearchTree
 }

@@ -25,7 +25,10 @@ class Day2Spec extends FlatSpec {
     )
     assertResult(Some("ac"))(Day2.task2(input0))
 
-    val input1 = List(
+    val input1 = List("abc", "bbc")
+    assertResult(Some("bc"))(Day2.task2(input1))
+
+    val input2 = List(
       "abcde",
       "fghij",
       "klmno",
@@ -34,6 +37,6 @@ class Day2Spec extends FlatSpec {
       "axcye",
       "wvxyz"
     )
-    assertResult(Some("fgij"))(Day2.task2(input1))
+    assertResult(Some("fgij"))(Day2.task2(input2))
   }
 }
