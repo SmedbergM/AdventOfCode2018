@@ -1,16 +1,15 @@
 package day5
 
+import common.AdventApp
 import scalaj.http.Http
 
-object Day5Part1 extends App {
-  val sessionId = sys.env("SESSION_ID")
+object Day5Part1 extends AdventApp {
   val challenge = Day5.fetchChallenge(sessionId)
 
   println(s"Task 1: After cancellation, ${Day5.simplify(challenge).size} characters remain.")
 }
 
-object Day5Part2 extends App {
-  val sessionId = sys.env("SESSION_ID")
+object Day5Part2 extends AdventApp {
   val challenge = Day5.fetchChallenge(sessionId)
 
   val (m, len) = Day5.task2(challenge)

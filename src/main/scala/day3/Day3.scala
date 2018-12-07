@@ -4,17 +4,16 @@ import scala.collection.concurrent.TrieMap
 import scala.util.Try
 
 import com.typesafe.scalalogging.LazyLogging
+import common.AdventApp
 import scalaj.http.Http
 
-object Day3Part1 extends App {
-  val sessionId = sys.env("SESSION_ID")
+object Day3Part1 extends AdventApp {
   val claims = Day3.fetchChallenge(sessionId)
 
   println(s"I got ${Day3.task1(claims)} disputed squares")
 }
 
-object Day3Part2 extends App {
-  val sessionId = sys.env("SESSION_ID")
+object Day3Part2 extends AdventApp {
   val claims = Day3.fetchChallenge(sessionId)
 
   println(s"I found ${Day3.task2(claims)} non-overlapping any other claims.")

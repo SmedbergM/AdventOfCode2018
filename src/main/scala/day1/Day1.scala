@@ -3,17 +3,16 @@ package day1
 import scala.util.Try
 
 import com.typesafe.scalalogging.LazyLogging
+import common.AdventApp
 import scalaj.http.Http
 
-object Day1Part1 extends App {
-  val sessionId = sys.env("SESSION_ID")
+object Day1Part1 extends AdventApp {
   val challenge = Day1.fetchChallenge(sessionId)
 
   println(s"Part 1: ${Day1.task1(challenge)}")
 }
 
-object Day1Part2 extends App {
-  val sessionId = sys.env("SESSION_ID")
+object Day1Part2 extends AdventApp {
   val challenge = Day1.fetchChallenge(sessionId)
 
   println(s"Part 2: ${Day1.task2(challenge)}")

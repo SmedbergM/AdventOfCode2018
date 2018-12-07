@@ -5,10 +5,10 @@ import scala.collection.concurrent.TrieMap
 import scala.util.Try
 
 import com.typesafe.scalalogging.LazyLogging
+import common.AdventApp
 import scalaj.http.Http
 
-object Day4Part1 extends App {
-  val sessionId = sys.env("SESSION_ID")
+object Day4Part1 extends AdventApp {
   val guardLogEntries = Day4.fetchChallenge(sessionId)
   val shifts = Day4.getShifts(guardLogEntries)
 
@@ -16,8 +16,7 @@ object Day4Part1 extends App {
   println(s"Task 1: ${challengeResponse}")
 }
 
-object Day4Part2 extends App {
-  val sessionId = sys.env("SESSION_ID")
+object Day4Part2 extends AdventApp {
   val guardLogEntries = Day4.fetchChallenge(sessionId)
   val shifts = Day4.getShifts(guardLogEntries)
 

@@ -2,17 +2,16 @@ package day2
 
 import scala.collection.JavaConverters._
 
+import common.AdventApp
 import scalaj.http.Http
 
-object Day2Part1 extends App {
-  val sessionId = sys.env("SESSION_ID")
+object Day2Part1 extends AdventApp {
   val challenge = Day2.parseChallenge(Day2.fetchChallenge(sessionId))
 
   println(s"Part 1: ${Day2.task1(challenge)}")
 }
 
-object Day2Part2 extends App {
-  val sessionId = sys.env("SESSION_ID")
+object Day2Part2 extends AdventApp {
   val challenge = Day2.parseChallenge(Day2.fetchChallenge(sessionId))
 
   println(s"Part 2: ${Day2.task2(challenge)}")
