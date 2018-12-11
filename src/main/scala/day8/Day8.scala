@@ -13,6 +13,7 @@ object Day8Part1 extends AdventApp {
   val optNode = Day8.parseNode(challenge)
   println(s"Task 1: ${optNode.map(_.metadataChecksum)}")
   println(s"Task 2: ${optNode.map(_.eval)}")
+  println(s"Task 2, second try ${optNode.map(_.eval2)}")
 }
 
 object Day8 extends LazyLogging {
@@ -97,15 +98,71 @@ case class Node(childNodes: Vector[Node],
     }
   }
 
-  def eval: Int = if (childNodes.isEmpty) {
+  private def _eval: Int = if (childNodes.isEmpty) {
     metadataChecksum
   } else {
     metadata.collect {
       case Metadata(idx) if 1 <= idx && idx <= childNodes.length =>
         val childNode = childNodes(idx - 1)
-        childNode.eval
+        childNode._eval
     }.sum
   }
 
-  protected final def evalIter(acc: Int, togo: List[List[Node]]): Int = ???
+  def eval: Int = evalIter(0, Nil)
+  def eval2: Int = evalIter2(0, 1, Nil)
+
+  @tailrec
+  protected final def evalIter(acc: Int, togo: List[List[Node]]): Int = {
+    def nextToGo = metadata.collect {
+      case Metadata(idx) if childNodes.isDefinedAt(idx - 1) => childNodes(idx - 1)
+    }.toList
+
+    if (childNodes.isEmpty) {
+      def nextAcc = acc + metadata.map(_.value).sum // * multiplier
+      togo match {
+        case Nil => nextAcc
+        case Nil :: rest =>
+          evalIter(acc, rest)
+        case (head :: headRest) :: rest =>
+          head.evalIter(nextAcc, headRest :: rest)
+      }
+    } else (nextToGo, togo) match {
+      case (Nil, Nil) => acc
+      case (Nil, Nil :: rest) =>
+        evalIter(acc, rest)
+      case (Nil, (head :: headRest) :: rest) =>
+        head.evalIter(acc, headRest :: rest)
+      case (head :: rest, _) =>
+        head.evalIter(acc, rest :: togo)
+    }
+  }
+
+  // TODO: Doesn't work
+  @tailrec
+  protected final def evalIter2(acc: Int, multiplier: Int, togo: List[List[(Int, Node)]]): Int = {
+    def nextTogos = metadata.collect {
+      case Metadata(idx1) if childNodes.isDefinedAt(idx1 - 1) => idx1 - 1
+    }.groupBy(identity).map { case (idx, xs) =>
+      (multiplier * xs.length) -> childNodes(idx)
+    }.toList
+
+    if (childNodes.isEmpty) {
+      def nextAcc = acc + metadata.map(_.value).sum * multiplier
+      togo match {
+        case Nil => nextAcc
+        case Nil :: rest =>
+          evalIter2(acc, multiplier, rest)
+        case ((m, head) :: headRest) :: rest =>
+          head.evalIter2(nextAcc, m, headRest :: rest)
+      }
+    } else (nextTogos, togo) match {
+      case (Nil, Nil) => acc
+      case (Nil, Nil :: rest) =>
+        evalIter2(acc, multiplier, rest)
+      case (Nil, ((m, head) :: headRest) :: rest) =>
+        head.evalIter2(acc, m, headRest :: rest)
+      case ((m, head) :: rest, _) =>
+        head.evalIter2(acc, m, rest :: togo)
+    }
+  }
 }
