@@ -17,11 +17,13 @@ object Day17Part1 extends AdventApp with LazyLogging {
 
   val h = geologicalSurvey.hydrate()
   logger.info(s"${h.size} hydrated squares")
+
+  logger.info(s"After the well runs dry, ${h.count(_._2 == Standing)} squares will be hydrated.")
 }
 
 object Day17 {
   def localChallenge: GeologicalSurvey = {
-    val body = Source.fromInputStream(getClass.getResourceAsStream("/challenge17")).mkString
+    val body = Source.fromInputStream(getClass.getResourceAsStream("/17.challenge")).mkString
     GeologicalSurvey.parse(body)
   }
 
