@@ -1,6 +1,8 @@
 package day20
 
+import scala.annotation.tailrec
 import scala.collection.concurrent.TrieMap
+import scala.collection.mutable
 import scala.io.Source
 
 import com.typesafe.scalalogging.LazyLogging
@@ -8,8 +10,9 @@ import scalaj.http.Http
 
 object Day20Part1 extends App with LazyLogging {
   val path = Day20.localChallenge
-
-  logger.info(s"Path depth: ${path.depth}")
+  val floorPlan = FloorPlan.build(path)
+  val bfs = floorPlan.farthestRoom
+  logger.info(s"Furthest room: ${bfs}")
 }
 
 object Day20 {
@@ -26,7 +29,53 @@ object Day20 {
   }
 }
 
-case class FloorPlan(squares: Map[XY, GridSquare])
+case class FloorPlan(squares: Map[XY, GridSquare]) {
+  private val (xMin, yMin, xMax, yMax) = squares.keys.foldLeft((0,0,0,0)){
+    case ((xm, ym, xM, yM), XY(x,y)) => (xm.min(x), ym.min(y), xM.max(x), yM.max(y))
+  }
+  def prettyPrint: String = {
+    (yMin - 1 to yMax + 1).map { y =>
+      (xMin - 1 to xMax + 1).map { x =>
+        if (x == 0 && y == 0) {"X"} else squares.getOrElse(XY(x,y), GridSquare.Wall).toString
+      }.mkString
+    }.mkString("\n")
+  }
+  def farthestRoom: ((XY, Int), Int) = {
+    val visited = TrieMap.empty[XY, Int]
+    val queue = mutable.Queue(XY(0,0) -> 0)
+
+    @tailrec
+    def iter(bestRoom: XY, bestDist: Int): (XY, Int) = {
+      queue.dequeueFirst(_ => true) match {
+        case None =>
+          bestRoom -> bestDist
+        case Some((room, _)) if visited.contains(room) => // since this is BFS, if visited contains the room, its marked distance will be less than the current distance
+          iter(bestRoom, bestDist)
+        case Some((room, dist)) =>
+          visited.put(room, dist)
+          val (nextBestRoom, nextBestDist) = if (dist > bestDist) {
+            room -> dist
+          } else {
+            bestRoom -> bestDist
+          }
+          Cardinal.values.foreach { direction =>
+            squares.get(room.step(direction)).collect {
+              case door: GridSquare.Door => door
+            }.foreach { door =>
+              val nextRoom = room.step(direction).step(direction)
+              if (!visited.contains(nextRoom)) {
+                queue.enqueue(nextRoom -> (dist + 1))
+              }
+            }
+          }
+          iter(nextBestRoom, nextBestDist)
+      }
+    }
+    val bfs = iter(XY(0,0), 0)
+    val n1000 = visited.count(_._2 >= 1000)
+    bfs -> n1000
+  }
+}
 
 object FloorPlan extends LazyLogging {
   def build(forkedPath: ForkedPath): FloorPlan = {
@@ -90,10 +139,11 @@ object GridSquare {
   case object Room extends GridSquare {
     override def toString: String = "."
   }
-  case object NSDoor extends GridSquare {
+  sealed trait Door extends GridSquare
+  case object NSDoor extends Door {
     override def toString: String = "-"
   }
-  case object EWDoor extends GridSquare {
+  case object EWDoor extends Door {
     override def toString: String = "|"
   }
 }
@@ -210,6 +260,8 @@ object ForkedPath {
 sealed trait Cardinal
 
 object Cardinal {
+  val values: Set[Cardinal] = Set(North, West, East, South)
+
   case object North extends Cardinal {
     override def toString: String = "N"
   }
